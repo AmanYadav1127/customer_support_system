@@ -1,179 +1,137 @@
-import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate
+} from 'react-router-dom';
+
+import LoginPage from './LoginPage';
+import HomePage from './HomePage';
+import TicketsPage from './TicketsPage';
+import Layout from './Layout';
+import ProtectedRoute from './ProtectedRoute';
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [backendHealth, setBackendHealth] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginError, setLoginError] = useState(null);
+
+  // Check session on app load
   useEffect(() => {
-    fetchBackendHealth()
-  }, [])
 
-  const fetchBackendHealth = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('http://localhost:8080/api/health', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    fetch('http://localhost:8080/api/auth/me', {
+      credentials: 'include',
+    })
+      .then(res => {
+        if (res.ok) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
       })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const data = await response.json()
-      setBackendHealth(data)
-      setError(null)
-    } catch (err) {
-      console.error('Fetch error:', err)
-      setError(err.message)
-      setBackendHealth(null)
-    } finally {
-      setLoading(false)
-    }
-  }
+      .catch(() => {
+        setIsAuthenticated(false);
+      });
+
+  }, []);
+
+  // Login
+  const handleLogin = (username, password) => {
+
+    const formData = new URLSearchParams();
+
+    formData.append("username", username);
+    formData.append("password", password);
+
+    fetch('http://localhost:8080/api/auth/login', {
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+
+      credentials: 'include',
+
+      body: formData
+    })
+      .then(res => {
+
+        if (res.ok) {
+
+          setIsAuthenticated(true);
+          setLoginError(null);
+
+        } else {
+
+          setLoginError('Invalid credentials');
+        }
+      })
+      .catch(() => {
+        setLoginError('Login failed');
+      });
+  };
+
+  // Logout
+  const handleLogout = () => {
+
+    fetch('http://localhost:8080/logout', {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then(() => {
+        setIsAuthenticated(false);
+      });
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+
+    <Router>
+
+      <Routes>
+
+        <Route
+          path="/login"
+          element={
+            isAuthenticated
+              ? <Navigate to="/home" replace />
+              : <LoginPage
+                  onLogin={handleLogin}
+                  error={loginError}
+                />
+          }
+        />
+
+        <Route
+          path="/"
+          element={
+            <Navigate
+              to={isAuthenticated ? "/home" : "/login"}
+              replace
+            />
+          }
+        />
+
+        <Route
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Layout onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
         >
-          Count is {count}
-        </button>
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/tickets" element={<TicketsPage />} />
+        </Route>
 
-        <div style={{
-          marginTop: '30px',
-          padding: '20px',
-          border: '2px solid #646cff',
-          borderRadius: '8px',
-          backgroundColor: 'rgba(100, 108, 255, 0.1)'
-        }}>
-          <h3>Backend Health Status</h3>
-          {loading && <p>Loading backend info...</p>}
-          {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-          {backendHealth && (
-            <div style={{ textAlign: 'left', fontSize: '14px' }}>
-              <p><strong>Status:</strong> <span style={{ color: backendHealth.status === 'UP' ? 'green' : 'red' }}>
-                {backendHealth.status}
-              </span></p>
-              <p><strong>Service:</strong> {backendHealth.service}</p>
-              <p><strong>Version:</strong> {backendHealth.version}</p>
-              <p><strong>Database:</strong> {backendHealth.database}</p>
-              <p><strong>Timestamp:</strong> {new Date(backendHealth.timestamp).toLocaleString()}</p>
-            </div>
-          )}
-          <button onClick={fetchBackendHealth} style={{ marginTop: '10px' }}>
-            Refresh Health Status
-          </button>
-        </div>
-      </section>
+        <Route
+          path="*"
+          element={<Navigate to="/" replace />}
+        />
 
-      <div className="ticks"></div>
+      </Routes>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    </Router>
+  );
 }
 
-export default App
+export default App;
