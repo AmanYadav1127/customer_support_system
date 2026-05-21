@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
@@ -6,6 +6,37 @@ import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
+  const [backendHealth, setBackendHealth] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetchBackendHealth()
+  }, [])
+
+  const fetchBackendHealth = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('http://localhost:8080/api/health', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data = await response.json()
+      setBackendHealth(data)
+      setError(null)
+    } catch (err) {
+      console.error('Fetch error:', err)
+      setError(err.message)
+      setBackendHealth(null)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <>
@@ -28,6 +59,32 @@ function App() {
         >
           Count is {count}
         </button>
+
+        <div style={{
+          marginTop: '30px',
+          padding: '20px',
+          border: '2px solid #646cff',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(100, 108, 255, 0.1)'
+        }}>
+          <h3>Backend Health Status</h3>
+          {loading && <p>Loading backend info...</p>}
+          {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+          {backendHealth && (
+            <div style={{ textAlign: 'left', fontSize: '14px' }}>
+              <p><strong>Status:</strong> <span style={{ color: backendHealth.status === 'UP' ? 'green' : 'red' }}>
+                {backendHealth.status}
+              </span></p>
+              <p><strong>Service:</strong> {backendHealth.service}</p>
+              <p><strong>Version:</strong> {backendHealth.version}</p>
+              <p><strong>Database:</strong> {backendHealth.database}</p>
+              <p><strong>Timestamp:</strong> {new Date(backendHealth.timestamp).toLocaleString()}</p>
+            </div>
+          )}
+          <button onClick={fetchBackendHealth} style={{ marginTop: '10px' }}>
+            Refresh Health Status
+          </button>
+        </div>
       </section>
 
       <div className="ticks"></div>
