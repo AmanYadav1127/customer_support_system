@@ -16,8 +16,8 @@ public class HealthController {
     public ResponseEntity<Map<String, Object>> health() {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "UP");
-        response.put("service", "Customer Support System - Backend");
-        response.put("version", "1.0.0");
+        response.put("service", "Customer Support System");
+        response.put("version", "1.0.0-MVP");
         response.put("timestamp", LocalDateTime.now());
         response.put("database", "Connected");
         
