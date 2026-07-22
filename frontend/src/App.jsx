@@ -9,6 +9,7 @@ import {
 import LoginPage from './LoginPage';
 import HomePage from './HomePage';
 import TicketsPage from './TicketsPage';
+import TicketDetail from './TicketDetail';
 import Layout from './Layout';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -117,6 +118,7 @@ function App() {
         >
           <Route path="/home" element={<HomePage />} />
           <Route path="/tickets" element={<TicketsPage />} />
+          <Route path="/tickets/:id" element={<TicketDetail />} />
         </Route>
 
         <Route
