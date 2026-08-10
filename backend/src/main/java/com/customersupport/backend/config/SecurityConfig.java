@@ -101,6 +101,12 @@ public class SecurityConfig {
                         })
                 )
 
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, authException) -> {
+                            res.sendError(401, "Unauthorized");
+                        })
+                )
+
                 .httpBasic(httpBasic -> httpBasic.disable());
 
         return http.build();

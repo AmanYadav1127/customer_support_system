@@ -31,7 +31,7 @@ public class DataSeeder implements CommandLineRunner {
             ticketRepository.save(t1);
             
             Message m1 = new Message(t1, SenderType.CUSTOMER, "Hi, I cannot login to my account. It says invalid password but I am sure it is correct.");
-            Message m2 = new Message(t1, SenderType.AI, "Hello John, I understand you are having login issues. Could you please try resetting your password using the 'Forgot Password' link?");
+            Message m2 = new Message(t1, SenderType.ADMIN, "Hello John, I understand you are having login issues. Could you please try resetting your password using the 'Forgot Password' link?");
             Message m3 = new Message(t1, SenderType.CUSTOMER, "I tried that but I never received the reset email.");
             messageRepository.saveAll(Arrays.asList(m1, m2, m3));
 
