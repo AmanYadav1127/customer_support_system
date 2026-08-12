@@ -20,11 +20,13 @@ public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final MessageRepository messageRepository;
+    private final EmailService emailService;
 
     @Autowired
-    public TicketService(TicketRepository ticketRepository, MessageRepository messageRepository) {
+    public TicketService(TicketRepository ticketRepository, MessageRepository messageRepository, EmailService emailService) {
         this.ticketRepository = ticketRepository;
         this.messageRepository = messageRepository;
+        this.emailService = emailService;
     }
 
     public List<TicketDto> getAllTickets(TicketStatus status) {
@@ -72,6 +74,9 @@ public class TicketService {
             ticketRepository.save(ticket);
         }
         
+        // Send email to customer
+        emailService.sendEmail(ticket.getCustomerEmail(), "Re: " + ticket.getSubject(), body);
+        
         return mapMessageToDto(message);
     }
 
@@ -95,5 +100,17 @@ public class TicketService {
                 message.getBody(),
                 message.getCreatedAt()
         );
+    }
+
+    @Transactional
+    public TicketDto createTicketFromEmail(String customerEmail, String subject, String body) {
+        Ticket ticket = new Ticket(subject != null ? subject : "No Subject", customerEmail);
+        ticket.setStatus(TicketStatus.OPEN); // As requested, create with OPEN status
+        ticket = ticketRepository.save(ticket);
+        
+        Message message = new Message(ticket, SenderType.CUSTOMER, body != null ? body : "");
+        messageRepository.save(message);
+        
+        return mapToDto(ticket);
     }
 }
